@@ -256,6 +256,8 @@ g_omx_core_new (void)
 
     core->omx_state = OMX_StateInvalid;
 
+    core->settings_changed = FALSE;
+
     return core;
 }
 
@@ -912,10 +914,18 @@ EventHandler (OMX_HANDLETYPE omx_handle,
         case OMX_EventPortSettingsChanged:
             {
                 /** @todo only on the relevant port. */
+#ifdef BUILD_WITH_ANDROID
+                /*
+                 *  In Android PV OpenMAX, we cannot call GetParameter() in call back function.
+                 *  Set a flag to call it in stream thread
+                 */
+                core->settings_changed = TRUE;
+#else
                 if (core->settings_changed_cb)
                 {
                     core->settings_changed_cb (core);
                 }
+#endif /* BUILD_WITH_ANDROID */
             }
         case OMX_EventError:
             {
