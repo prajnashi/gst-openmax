@@ -37,6 +37,12 @@ typedef struct GstOmxH264DecClass GstOmxH264DecClass;
 struct GstOmxH264Dec
 {
     GstOmxBaseVideoDec omx_base;
+
+    /* flag used to combine VideoSpecificInfo in "codec_data" with first
+       frame */
+    /* gboolean is_first_frame; */
+    GstBuffer* codec_data;
+    GstPadChainFunction base_chain_func;
 };
 
 struct GstOmxH264DecClass
