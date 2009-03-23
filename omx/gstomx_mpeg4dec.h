@@ -37,6 +37,12 @@ typedef struct GstOmxMpeg4DecClass GstOmxMpeg4DecClass;
 struct GstOmxMpeg4Dec
 {
     GstOmxBaseVideoDec omx_base;
+
+    /* flag used to combine VideoSpecificInfo in "codec_data" with first
+       frame */
+    /* gboolean is_first_frame; */
+    GstBuffer* codec_data;
+    GstPadChainFunction base_chain_func;
 };
 
 struct GstOmxMpeg4DecClass

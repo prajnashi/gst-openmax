@@ -34,6 +34,9 @@ GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
 
 static GstOmxBaseVideoDecClass *parent_class = NULL;
 
+static GstFlowReturn gst_omx_mpeg4dec_pad_chain (GstPad *pad, GstBuffer *buf);
+static void gst_omx_mpeg4dec_dispose (GObject *obj);
+
 static GstCaps *
 generate_sink_template (void)
 {
@@ -109,11 +112,89 @@ type_base_init (gpointer g_class)
     }
 }
 
+static gboolean
+sink_setcaps (GstPad *pad,
+              GstCaps *caps)
+{
+    GstOmxBaseFilter *omx_base;
+    GOmxCore *gomx;
+    GstStructure *s;
+    GstOmxMpeg4Dec *omx_mpeg4dec;
+    const GValue *v = NULL;
+
+    omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad)); 
+    gomx = (GOmxCore *) omx_base->gomx;
+    omx_mpeg4dec = GST_OMX_MPEG4DEC(gst_pad_get_parent (pad));
+
+    GST_INFO_OBJECT (omx_mpeg4dec, "Enter"); 
+
+    /* get codec_data */
+    s = gst_caps_get_structure (caps, 0);
+    if( omx_mpeg4dec->codec_data != NULL )
+    {
+        gst_buffer_unref(omx_mpeg4dec->codec_data);
+        omx_mpeg4dec->codec_data = NULL;
+    }
+    
+    if ((v = gst_structure_get_value (s, "codec_data")))
+    {
+        omx_mpeg4dec->codec_data = gst_buffer_ref (gst_value_get_buffer (v));
+        GST_INFO_OBJECT (omx_mpeg4dec, 
+            "codec_data_length=%d",
+            GST_BUFFER_SIZE(omx_mpeg4dec->codec_data));
+    }
+    
+    GST_INFO_OBJECT (omx_mpeg4dec, "setcaps (sink): %" GST_PTR_FORMAT, caps); 
+
+    return gst_pad_set_caps (pad, caps);
+}
+
 static void
 type_class_init (gpointer g_class,
                  gpointer class_data)
 {
+    GObjectClass *gobject_class;
+    GstElementClass *gstelement_class;
+
+    gobject_class = (GObjectClass *) g_class;
+    gstelement_class = (GstElementClass *) g_class;
+
     parent_class = g_type_class_ref (GST_OMX_BASE_VIDEODEC_TYPE);
+
+    gobject_class->dispose = gst_omx_mpeg4dec_dispose;
+}
+
+static GstFlowReturn gst_omx_mpeg4dec_pad_chain (GstPad *pad, GstBuffer *buf)
+{
+    GstOmxBaseFilter *omx_base;
+    GstOmxMpeg4Dec *omx_mpeg4dec;
+    GstFlowReturn result = GST_FLOW_ERROR;
+
+    omx_base = GST_OMX_BASE_FILTER (GST_PAD_PARENT (pad));
+    omx_mpeg4dec = GST_OMX_MPEG4DEC(gst_pad_get_parent (pad));
+
+    GST_INFO_OBJECT (omx_mpeg4dec, "Enter");
+    
+    if( omx_mpeg4dec->base_chain_func )
+    {
+#ifdef BUILD_WITH_ANDROID
+        /* send codec_date as the first frame in PV OpenMAX */
+        if(omx_mpeg4dec->codec_data != NULL)
+        {
+            result = omx_mpeg4dec->base_chain_func(pad, omx_mpeg4dec->codec_data);
+            GST_INFO_OBJECT (omx_mpeg4dec, "result=0x%08x", result);
+            gst_buffer_unref(omx_mpeg4dec->codec_data); 
+            omx_mpeg4dec->codec_data = NULL;
+        }
+#endif /* BUILD_WITH_ANDROID */     
+        if(buf != NULL)
+        {
+            result = omx_mpeg4dec->base_chain_func(pad, buf);
+            GST_INFO_OBJECT (omx_mpeg4dec, "result=0x%08x", result);
+        }
+    }
+
+    return result;
 }
 
 static void
@@ -121,16 +202,46 @@ type_instance_init (GTypeInstance *instance,
                     gpointer g_class)
 {
     GstOmxBaseFilter *omx_base_filter;
+    GstOmxMpeg4Dec *omx_mpeg4dec;
     GstOmxBaseVideoDec *omx_base;
 
     omx_base_filter = GST_OMX_BASE_FILTER (instance);
     omx_base = GST_OMX_BASE_VIDEODEC (instance);
 
+    omx_mpeg4dec = GST_OMX_MPEG4DEC(instance);
     GST_INFO_OBJECT(omx_mpeg4dec, "Enter");
 
     omx_base_filter->omx_component = g_strdup (OMX_COMPONENT_NAME);
     omx_base->compression_format = OMX_VIDEO_CodingMPEG4;
+
+    gst_pad_set_setcaps_function (omx_base_filter->sinkpad, sink_setcaps);
+
+    /* initialize mpeg4 decoder specific data */
+    /* omx_mpeg4dec->is_first_frame = true; */
+    omx_mpeg4dec->codec_data = NULL;
+    omx_mpeg4dec->base_chain_func = NULL;
+    
+    /* replace base chain func */
+    omx_mpeg4dec->base_chain_func = GST_PAD_CHAINFUNC(omx_base_filter->sinkpad);
+    gst_pad_set_chain_function (omx_base_filter->sinkpad, gst_omx_mpeg4dec_pad_chain);
     GST_INFO_OBJECT(omx_mpeg4dec, "Leave");
+}
+
+static void
+gst_omx_mpeg4dec_dispose (GObject *obj)
+{
+    GstOmxMpeg4Dec *omx_mpeg4dec;
+    
+    omx_mpeg4dec = GST_OMX_MPEG4DEC(obj);
+
+    GST_INFO_OBJECT (omx_mpeg4dec, "Enter");
+
+    if(omx_mpeg4dec->codec_data)
+    {
+        gst_buffer_unref(omx_mpeg4dec->codec_data);
+        omx_mpeg4dec->codec_data = NULL;
+    }
+    omx_mpeg4dec->base_chain_func = NULL;
 }
 
 GType
