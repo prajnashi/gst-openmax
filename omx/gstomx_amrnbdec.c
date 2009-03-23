@@ -33,6 +33,8 @@
 
 static GstOmxBaseFilterClass *parent_class = NULL;
 
+static GstStateChangeReturn gst_nb_change_state (GstElement *element, GstStateChange transition);
+
 static GstCaps *
 generate_src_template (void)
 {
@@ -105,8 +107,13 @@ type_base_init (gpointer g_class)
 static void
 type_class_init (gpointer g_class,
                  gpointer class_data)
-{
+{  
+    GstElementClass *element_class;
+    element_class = GST_ELEMENT_CLASS (g_class);
+
     parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
+
+    element_class->change_state = GST_DEBUG_FUNCPTR(gst_nb_change_state);
 }
 
 static void
@@ -166,6 +173,73 @@ type_instance_init (GTypeInstance *instance,
 
     omx_base->gomx->settings_changed_cb = settings_changed_cb;
 }
+
+static GstStateChangeReturn
+gst_nb_change_state (GstElement *element,
+                GstStateChange transition)
+{
+    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+
+    OMX_AUDIO_PARAM_PCMMODETYPE *param;
+    GstOmxAmrNbDec *self;
+    GstOmxBaseFilter *omx_base;
+    OMX_HANDLETYPE nb_handle;
+
+    self = GST_OMX_AMRNBDEC(element);
+    omx_base = GST_OMX_BASE_FILTER (element);
+    nb_handle = omx_base->gomx->omx_handle;
+
+    param = calloc (1, sizeof (OMX_AUDIO_PARAM_PCMMODETYPE));
+    param->nSize = sizeof (OMX_AUDIO_PARAM_PCMMODETYPE);
+    param->nVersion.s.nVersionMajor = 1;
+    param->nVersion.s.nVersionMinor = 1;
+    param->nPortIndex = 1;
+
+    switch (transition)
+    {
+        case GST_STATE_CHANGE_NULL_TO_READY:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_NULL_TO_READY\n");
+            break;
+        case GST_STATE_CHANGE_READY_TO_PAUSED:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_READY_TO_PAUSED\n");
+#ifdef BUILD_WITH_ANDROID            
+            /* 
+             * set OMX_IndexConfigAudioAmrNB and OMX_IndexConfigAudioAmrFrameFormatFSF
+             * to work with PV OpenMax
+             */
+            OMX_SetParameter(nb_handle, OMX_IndexConfigAudioAmrNB, param);
+            OMX_SetParameter(nb_handle, OMX_IndexConfigAudioAmrFrameFormatFSF, param);
+#endif /* BUILD_WITH_ANDROID */
+            break;
+        case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PAUSED_TO_PLAYING\n");
+            break;
+        default:
+            break;
+    }
+    ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+    if (ret == GST_STATE_CHANGE_FAILURE)
+        return ret;
+    
+    switch (transition)
+    {
+        case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PLAYING_TO_PAUSED\n");
+            break;
+        case GST_STATE_CHANGE_PAUSED_TO_READY:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PAUSED_TO_READY\n");
+            break;
+        case GST_STATE_CHANGE_READY_TO_NULL:
+            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_READY_TO_NULL\n");
+            break;
+        default:
+            break;
+    }
+
+    free (param);
+    return ret;
+}
+
 
 GType
 gst_omx_amrnbdec_get_type (void)
