@@ -622,6 +622,8 @@ pad_chain (GstPad *pad,
                 }
 
                 buffer_offset += omx_buffer->nFilledLen;
+                /* set end of frame to work with PV OpenMAX in Android */
+                omx_buffer->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
                 GST_LOG_OBJECT (self, "release_buffer");
                 /** @todo untaint buffer */
