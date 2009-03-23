@@ -22,6 +22,10 @@
 #include "gstomx_h264dec.h"
 #include "gstomx.h"
 
+/* open omx debug category */
+GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
+#define GST_OMX_CAT gstomx_debug
+
 #define OMX_COMPONENT_NAME "OMX.st.video_decoder.avc"
 
 static GstOmxBaseVideoDecClass *parent_class = NULL;

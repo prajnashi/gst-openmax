@@ -21,6 +21,7 @@
  */
 
 #include "gstomx_util.h"
+#include <gst/gst.h>
 #include <dlfcn.h>
 
 #include "gstomx.h"
@@ -278,16 +279,19 @@ g_omx_core_init (GOmxCore *core,
                  const gchar *library_name,
                  const gchar *component_name)
 {
+    GST_LOG("Enter, library_name=%s, component_name=%s", library_name, component_name);
     core->imp = request_imp (library_name);
 
     if (!core->imp)
     {
         core->omx_error = OMX_ErrorUndefined;
+        GST_ERROR("Leave, OMX_ErrorUndefined");
         return;
     }
 
     core->omx_error = core->imp->sym_table.get_handle (&core->omx_handle, (gchar *) component_name, core, &callbacks);
     core->omx_state = OMX_StateLoaded;
+    GST_LOG("Leave, omx_error=%d, omx_handle=%p", core->omx_error, core->omx_handle);
 }
 
 void
@@ -312,6 +316,8 @@ core_for_each_port (GOmxCore *core,
                     GOmxPortFunc func)
 {
     guint index;
+    GST_LOG("Enter");
+
 
     for (index = 0; index < core->ports->len; index++)
     {
@@ -322,6 +328,8 @@ core_for_each_port (GOmxCore *core,
         if (port)
             func (port);
     }
+
+    GST_CAT_LOG(GST_OMX_CAT, "Leave");
 }
 
 gboolean
@@ -397,6 +405,14 @@ g_omx_core_setup_port (GOmxCore *core,
 
     index = omx_port->nPortIndex;
     port = g_omx_core_get_port (core, index);
+
+
+    GST_LOG("Enter, nPortIndex=%d, nBufferCountActual=%d, nBufferCountMin=%d, nBufferSize=%d, eDomain=%d",
+        port->nPortIndex,
+        port->nBufferCountActual,
+        port->nBufferCountMin,
+        port->nBufferSize,
+        port->eDomain);
 
     if (!port)
     {
@@ -858,6 +874,7 @@ EventHandler (OMX_HANDLETYPE omx_handle,
 
     core = (GOmxCore *) app_data;
 
+    GST_LOG("Enter, eEvent=%d", event);
     switch (event)
     {
         case OMX_EventCmdComplete:
@@ -865,6 +882,8 @@ EventHandler (OMX_HANDLETYPE omx_handle,
                 OMX_COMMANDTYPE cmd;
 
                 cmd = (OMX_COMMANDTYPE) data_1;
+
+                GST_LOG("OMX_EventCmdComplete enter");
 
                 switch (cmd)
                 {
@@ -920,6 +939,8 @@ EventHandler (OMX_HANDLETYPE omx_handle,
             break;
     }
 
+    GST_LOG("Leave");
+
     return OMX_ErrorNone;
 }
 
@@ -931,11 +952,15 @@ EmptyBufferDone (OMX_HANDLETYPE omx_handle,
     GOmxCore *core;
     GOmxPort *port;
 
+    GST_LOG("Enter");
+
     core = (GOmxCore*) app_data;
     port = g_omx_core_get_port (core, omx_buffer->nInputPortIndex);
 
     GST_LOG ("omx_buffer=%p", omx_buffer);
     got_buffer (core, port, omx_buffer);
+
+    GST_LOG("Leave");
 
     return OMX_ErrorNone;
 }
@@ -947,12 +972,15 @@ FillBufferDone (OMX_HANDLETYPE omx_handle,
 {
     GOmxCore *core;
     GOmxPort *port;
+    GST_LOG("Enter");
 
     core = (GOmxCore *) app_data;
     port = g_omx_core_get_port (core, omx_buffer->nOutputPortIndex);
 
     GST_LOG ("omx_buffer=%p", omx_buffer);
     got_buffer (core, port, omx_buffer);
+
+    GST_LOG("Leave");
 
     return OMX_ErrorNone;
 }

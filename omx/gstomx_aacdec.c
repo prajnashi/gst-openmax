@@ -24,6 +24,9 @@
 #include "gstomx.h"
 
 #include <stdlib.h> /* For calloc, free */
+/* open omx debug category */
+GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
+#define GST_OMX_CAT gstomx_debug
 
 #define OMX_COMPONENT_NAME "OMX.st.audio_decoder.aac"
 
@@ -156,9 +159,9 @@ settings_changed_cb (GOmxCore *core)
 
         rate = param->nSamplingRate;
         channels = param->nChannels;
-
         free (param);
     }
+    GST_DEBUG_OBJECT (omx_base, "After OMX_GetParameter, rate=%d, channels=%d", rate, channels);
 
     {
         GstCaps *new_caps;
@@ -175,6 +178,7 @@ settings_changed_cb (GOmxCore *core)
         GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
         gst_pad_set_caps (omx_base->srcpad, new_caps);
     }
+    GST_DEBUG_OBJECT (omx_base, "Leave");
 }
 
 static gboolean
@@ -215,12 +219,14 @@ type_instance_init (GTypeInstance *instance,
     GstOmxBaseFilter *omx_base;
 
     omx_base = GST_OMX_BASE_FILTER (instance);
+    GST_INFO_OBJECT(omx_aacdec, "Enter");
 
     omx_base->omx_component = g_strdup (OMX_COMPONENT_NAME);
 
     omx_base->gomx->settings_changed_cb = settings_changed_cb;
 
     gst_pad_set_setcaps_function (omx_base->sinkpad, sink_setcaps);
+    GST_INFO_OBJECT(omx_aacdec, "Leave");
 }
 
 GType

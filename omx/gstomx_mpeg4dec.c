@@ -22,6 +22,10 @@
 #include "gstomx_mpeg4dec.h"
 #include "gstomx.h"
 
+/* open omx debug category */
+GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
+#define GST_OMX_CAT gstomx_debug
+
 #define OMX_COMPONENT_NAME "OMX.st.video_decoder.mpeg4"
 
 static GstOmxBaseVideoDecClass *parent_class = NULL;
@@ -118,8 +122,11 @@ type_instance_init (GTypeInstance *instance,
     omx_base_filter = GST_OMX_BASE_FILTER (instance);
     omx_base = GST_OMX_BASE_VIDEODEC (instance);
 
+    GST_INFO_OBJECT(omx_mpeg4dec, "Enter");
+
     omx_base_filter->omx_component = g_strdup (OMX_COMPONENT_NAME);
     omx_base->compression_format = OMX_VIDEO_CodingMPEG4;
+    GST_INFO_OBJECT(omx_mpeg4dec, "Leave");
 }
 
 GType

@@ -324,6 +324,7 @@ output_loop (gpointer data)
                     GST_WARNING_OBJECT (self, "faking settings changed notification");
                     if (gomx->settings_changed_cb)
                         gomx->settings_changed_cb (gomx);
+                    GST_LOG_OBJECT (self, "Reset setting of source pad");
                 }
                 else
                 {
@@ -570,7 +571,7 @@ pad_chain (GstPad *pad,
                 goto out_flushing;
             }
 
-            GST_LOG_OBJECT (self, "request buffer");
+            GST_LOG_OBJECT (self, "request buffer, in_port=%p", in_port);
             omx_buffer = g_omx_port_request_buffer (in_port);
 
             GST_LOG_OBJECT (self, "omx_buffer: %p", omx_buffer);
@@ -615,6 +616,8 @@ pad_chain (GstPad *pad,
                     omx_buffer->nTimeStamp = gst_util_uint64_scale_int (GST_BUFFER_TIMESTAMP (buf),
                                                                         OMX_TICKS_PER_SECOND,
                                                                         GST_SECOND);
+                    GST_LOG_OBJECT (self, "omx_buffer->nTimeStamp=%" G_GINT64_FORMAT ", buf_time=%"GST_TIME_FORMAT,
+						 omx_buffer->nTimeStamp, GST_TIME_ARGS(GST_BUFFER_TIMESTAMP (buf)));                                                                        
                 }
 
                 buffer_offset += omx_buffer->nFilledLen;

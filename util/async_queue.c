@@ -20,8 +20,13 @@
  */
 
 #include <glib.h>
-
 #include "async_queue.h"
+#include <gst/gst.h>
+#include <unistd.h>
+
+/* open omx debug category */
+GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
+#define GST_OMX_CAT gstomx_debug
 
 AsyncQueue *
 async_queue_new (void)
@@ -52,6 +57,7 @@ async_queue_push (AsyncQueue *queue,
                   gpointer data)
 {
     g_mutex_lock (queue->mutex);
+    GST_CAT_LOG(GST_OMX_CAT, "Enter, data=0x%08x", data); 
 
     queue->head = g_list_prepend (queue->head, data);
     if (!queue->tail)
@@ -61,6 +67,7 @@ async_queue_push (AsyncQueue *queue,
     g_cond_signal (queue->condition);
 
     g_mutex_unlock (queue->mutex);
+    GST_CAT_LOG(GST_OMX_CAT, "Leave"); 
 }
 
 gpointer
@@ -69,16 +76,20 @@ async_queue_pop (AsyncQueue *queue)
     gpointer data = NULL;
 
     g_mutex_lock (queue->mutex);
-
+    GST_CAT_LOG(GST_OMX_CAT, "Enter"); 
+    
     if (!queue->enabled)
     {
         /* g_warning ("not enabled!"); */
+        GST_CAT_LOG(GST_OMX_CAT, "queue->enabled == FALSE"); 
         goto leave;
     }
 
     if (!queue->tail)
     {
+        GST_CAT_LOG(GST_OMX_CAT, "Before Wait");
         g_cond_wait (queue->condition, queue->mutex);
+        GST_CAT_LOG(GST_OMX_CAT, "After Wait");
     }
 
     if (queue->tail)
@@ -97,6 +108,7 @@ async_queue_pop (AsyncQueue *queue)
 
 leave:
     g_mutex_unlock (queue->mutex);
+    GST_CAT_LOG(GST_OMX_CAT, "Leave, data=0x%08x", data); 
 
     return data;
 }
