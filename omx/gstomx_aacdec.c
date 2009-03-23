@@ -302,7 +302,7 @@ static GstFlowReturn gst_omx_aacdec_pad_chain (GstPad *pad, GstBuffer *buf)
     if( omx_aacdec->base_chain_func )
         result = omx_aacdec->base_chain_func(pad, buf);
 
-    GST_INFO_OBJECT (omx_aacdec, "Leave, result=0x%08x", result);
+    GST_INFO_OBJECT (omx_aacdec, "Leave, result: %s", gst_flow_get_name(result));
 
     return result;
 }
@@ -340,9 +340,9 @@ gst_omx_aacdec_dispose (GObject *obj)
 {
     GstOmxAacDec *omx_aacdec;
     
-    GST_INFO_OBJECT (omx_aacdec, "Enter");
-
     omx_aacdec = GST_OMX_AACDEC(obj);
+
+    GST_INFO_OBJECT (omx_aacdec, "Enter");
 
     if(omx_aacdec->codec_data)
     {

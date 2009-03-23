@@ -338,7 +338,7 @@ g_omx_core_deinit (GOmxCore *core)
 
 typedef void (*GOmxPortFunc) (GOmxPort *port);
 
-static void inline
+inline void
 core_for_each_port (GOmxCore *core,
                     GOmxPortFunc func)
 {
@@ -356,7 +356,7 @@ core_for_each_port (GOmxCore *core,
             func (port);
     }
 
-    GST_CAT_LOG(GST_OMX_CAT, "Leave");
+    GST_LOG("Leave");
 }
 
 gboolean
@@ -434,12 +434,12 @@ g_omx_core_setup_port (GOmxCore *core,
     port = g_omx_core_get_port (core, index);
 
 
-    GST_LOG("Enter, nPortIndex=%d, nBufferCountActual=%d, nBufferCountMin=%d, nBufferSize=%d, eDomain=%d",
-        port->nPortIndex,
-        port->nBufferCountActual,
-        port->nBufferCountMin,
-        port->nBufferSize,
-        port->eDomain);
+    GST_LOG("Enter, nPortIndex=%lu, nBufferCountActual=%lu, nBufferCountMin=%lu, nBufferSize=%lu, eDomain=%lu",
+        omx_port->nPortIndex,
+        omx_port->nBufferCountActual,
+        omx_port->nBufferCountMin,
+        omx_port->nBufferSize,
+        omx_port->eDomain);
 
     if (!port)
     {

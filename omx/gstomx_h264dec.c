@@ -21,6 +21,7 @@
 
 #include "gstomx_h264dec.h"
 #include "gstomx.h"
+#include <string.h>
 
 /* open omx debug category */
 GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
@@ -192,7 +193,7 @@ static GstFlowReturn gst_omx_h264dec_pad_chain (GstPad *pad, GstBuffer *buf)
                     LenSeqPara);
 
                 result = omx_h264dec->base_chain_func(pad, SeqParabuf);
-                GST_INFO_OBJECT (omx_h264dec, "result=0x%08x, LenSeqPara=0x%08x", result, LenSeqPara);
+                GST_INFO_OBJECT (omx_h264dec, "result=%s, LenSeqPara=%d", gst_flow_get_name(result), LenSeqPara);
 
                 /* SeqParabuf shall be released in chain func */
                 index += LenSeqPara;
@@ -219,7 +220,7 @@ static GstFlowReturn gst_omx_h264dec_pad_chain (GstPad *pad, GstBuffer *buf)
                 GST_BUFFER_TIMESTAMP (PicParabuf) = GST_BUFFER_TIMESTAMP (omx_h264dec->codec_data);
 
                 result = omx_h264dec->base_chain_func(pad, PicParabuf);
-                GST_INFO_OBJECT (omx_h264dec, "result=0x%08x, LenPicPara=0x%08x", result, LenPicPara);
+                GST_INFO_OBJECT (omx_h264dec, "result=%s, LenPicPara=%d", gst_flow_get_name(result), LenPicPara);
 
                 /* PicParabuf shall be released in chain func */
                 index += LenPicPara;
@@ -252,7 +253,9 @@ static GstFlowReturn gst_omx_h264dec_pad_chain (GstPad *pad, GstBuffer *buf)
                     length + 4);
                 GST_BUFFER_TIMESTAMP (NalUnitbuf) = GST_BUFFER_TIMESTAMP (buf);
                 result = omx_h264dec->base_chain_func(pad, NalUnitbuf);
-                GST_INFO_OBJECT (omx_h264dec, "index=0x%x, length=0x%x, result=0x%x, buf_time=%d", index, length,  result, GST_BUFFER_TIMESTAMP (NalUnitbuf));
+                GST_INFO_OBJECT (omx_h264dec, "index=0x%x, length=0x%x, result=%s, buf_time=%"GST_TIME_FORMAT,
+				 index, length,  gst_flow_get_name(result),
+				 GST_TIME_ARGS(GST_BUFFER_TIMESTAMP (NalUnitbuf)));
                 index = index + 4 + length;
             }
             gst_buffer_unref(buf);

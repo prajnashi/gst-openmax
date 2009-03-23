@@ -57,7 +57,7 @@ async_queue_push (AsyncQueue *queue,
                   gpointer data)
 {
     g_mutex_lock (queue->mutex);
-    GST_CAT_LOG(GST_OMX_CAT, "Enter, data=0x%08x", data); 
+    GST_CAT_LOG(GST_OMX_CAT, "Enter, data=%p", data); 
 
     queue->head = g_list_prepend (queue->head, data);
     if (!queue->tail)
@@ -108,7 +108,7 @@ async_queue_pop (AsyncQueue *queue)
 
 leave:
     g_mutex_unlock (queue->mutex);
-    GST_CAT_LOG(GST_OMX_CAT, "Leave, data=0x%08x", data); 
+    GST_CAT_LOG(GST_OMX_CAT, "Leave, data=%p", data); 
 
     return data;
 }

@@ -344,7 +344,7 @@ output_loop (gpointer data)
             {
                 GstCaps *caps = NULL;
                 GstStructure *structure;
-                GValue value = { 0 };
+                GValue value = { 0, };
 
                 caps = gst_pad_get_negotiated_caps (self->srcpad);
                 caps = gst_caps_make_writable (caps);
@@ -413,7 +413,7 @@ output_loop (gpointer data)
                 }
                 else
                 {
-                    GST_WARNING_OBJECT (self, "couldn't allocate buffer of size %d",
+                    GST_WARNING_OBJECT (self, "couldn't allocate buffer of size %lu",
                                         omx_buffer->nFilledLen);
                 }
             }

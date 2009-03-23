@@ -182,7 +182,7 @@ static GstFlowReturn gst_omx_mpeg4dec_pad_chain (GstPad *pad, GstBuffer *buf)
         if(omx_mpeg4dec->codec_data != NULL)
         {
             result = omx_mpeg4dec->base_chain_func(pad, omx_mpeg4dec->codec_data);
-            GST_INFO_OBJECT (omx_mpeg4dec, "result=0x%08x", result);
+            GST_INFO_OBJECT (omx_mpeg4dec, "result: %s", gst_flow_get_name(result));
             gst_buffer_unref(omx_mpeg4dec->codec_data); 
             omx_mpeg4dec->codec_data = NULL;
         }
@@ -190,7 +190,7 @@ static GstFlowReturn gst_omx_mpeg4dec_pad_chain (GstPad *pad, GstBuffer *buf)
         if(buf != NULL)
         {
             result = omx_mpeg4dec->base_chain_func(pad, buf);
-            GST_INFO_OBJECT (omx_mpeg4dec, "result=0x%08x", result);
+            GST_INFO_OBJECT (omx_mpeg4dec, "result: %s", gst_flow_get_name(result));
         }
     }
 

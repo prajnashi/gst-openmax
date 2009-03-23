@@ -130,7 +130,6 @@ plugin_init (GstPlugin *plugin)
     {
         return false;
     }
-#endif /* BUILD_WITH_ANDROID */
 
     if (!gst_element_register (plugin, "omx_mp3dec", DEFAULT_RANK, GST_OMX_MP3DEC_TYPE))
     {
@@ -141,6 +140,7 @@ plugin_init (GstPlugin *plugin)
     {
         return false;
     }
+#endif /* BUILD_WITH_ANDROID */
 
     if (!gst_element_register (plugin, "omx_amrnbdec", DEFAULT_RANK, GST_OMX_AMRNBDEC_TYPE))
     {
