@@ -37,6 +37,12 @@ typedef struct GstOmxAacDecClass GstOmxAacDecClass;
 struct GstOmxAacDec
 {
     GstOmxBaseFilter omx_base;
+
+    /* flag used to combine AudioSpecificInfo in "codec_data" with first
+       frame */
+    /* gboolean is_first_frame; */
+    GstBuffer* codec_data;
+    GstPadChainFunction base_chain_func;
 };
 
 struct GstOmxAacDecClass
