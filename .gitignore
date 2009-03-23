@@ -3,6 +3,7 @@
 .deps
 .libs
 *.in
+*~
 
 INSTALL
 Makefile
