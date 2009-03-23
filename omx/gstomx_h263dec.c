@@ -22,7 +22,11 @@
 #include "gstomx_h263dec.h"
 #include "gstomx.h"
 
+#ifdef BUILD_WITH_ANDROID
+#define OMX_COMPONENT_NAME "OMX.PV.h263dec"
+#else
 #define OMX_COMPONENT_NAME "OMX.st.video_decoder.h263"
+#endif
 
 static GstOmxBaseVideoDecClass *parent_class = NULL;
 

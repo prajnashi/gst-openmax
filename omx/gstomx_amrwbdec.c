@@ -25,7 +25,11 @@
 
 #include <stdlib.h> /* For calloc, free */
 
+#ifdef BUILD_WITH_ANDROID
+#define OMX_COMPONENT_NAME "OMX.PV.amrdec"
+#else
 #define OMX_COMPONENT_NAME "OMX.st.audio_decoder.amrwb"
+#endif
 
 static GstOmxBaseFilterClass *parent_class = NULL;
 

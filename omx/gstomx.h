@@ -22,11 +22,17 @@
 #ifndef GSTOMX_H
 #define GSTOMX_H
 
+#include "config.h"
 #include <gst/gst.h>
 
 G_BEGIN_DECLS
 
+#ifdef BUILD_WITH_ANDROID 
+/* In android, openmax is built into PV player core, link it direclty */
+#define DEFAULT_LIBRARY_NAME "libopencoreplayer.so"
+#else
 #define DEFAULT_LIBRARY_NAME "libomxil-bellagio.so.0"
+#endif /* BUILD_WITH_ANDROID */
 
 GST_DEBUG_CATEGORY_EXTERN (gstomx_debug);
 GST_DEBUG_CATEGORY_EXTERN (gstomx_util_debug);

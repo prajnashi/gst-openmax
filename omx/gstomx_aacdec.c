@@ -28,7 +28,11 @@
 GST_DEBUG_CATEGORY_EXTERN(gstomx_debug);
 #define GST_OMX_CAT gstomx_debug
 
+#ifdef BUILD_WITH_ANDROID
+#define OMX_COMPONENT_NAME "OMX.PV.aacdec"
+#else
 #define OMX_COMPONENT_NAME "OMX.st.audio_decoder.aac"
+#endif
 
 static GstOmxBaseFilterClass *parent_class = NULL;
 
