@@ -7,6 +7,7 @@ GST_MAJORMINOR:= 0.10
 LOCAL_SRC_FILES:= \
     gstomx.c                \
     gstomx_base_filter.c    \
+    gstomx_interface.c	    \
     gstomx_base_videodec.c  \
     gstomx_util.c           \
     gstomx_dummy.c          \
@@ -36,7 +37,7 @@ LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)                       \
     $(LOCAL_PATH)/headers               \
     $(GST_OPENMAX_TOP)/android          \
-    $(GST_OPENMAX_TOP)util/            \
+    $(GST_OPENMAX_TOP)/util/            \
     external/gstreamer         \
     external/gstreamer/android \
     external/gstreamer/libs    \
