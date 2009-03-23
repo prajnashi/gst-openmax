@@ -318,12 +318,13 @@ output_loop (gpointer data)
 
                 caps = gst_pad_get_negotiated_caps (self->srcpad);
 
-                if (!caps)
+                if (!caps || gomx->settings_changed )
                 {
                     /** @todo We shouldn't be doing this. */
                     GST_WARNING_OBJECT (self, "faking settings changed notification");
                     if (gomx->settings_changed_cb)
                         gomx->settings_changed_cb (gomx);
+                    gomx->settings_changed = FALSE;
                     GST_LOG_OBJECT (self, "Reset setting of source pad");
                 }
                 else
