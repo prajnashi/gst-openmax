@@ -139,6 +139,9 @@ typedef enum OMX_INDEXTYPE {
     OMX_IndexConfigAudioEqualizer,   /**< reference: OMX_AUDIO_CONFIG_EQUALIZERTYPE */
     OMX_IndexConfigAudioReverberation, /**< reference: OMX_AUDIO_CONFIG_REVERBERATIONTYPE */
     OMX_IndexConfigAudioChannelVolume, /**< reference: OMX_AUDIO_CONFIG_CHANNELVOLUMETYPE */
+    OMX_IndexConfigAudioAmrNB,
+    OMX_IndexConfigAudioAmrWB,
+    OMX_IndexConfigAudioAmrFrameFormatFSF,
 
     /* Image specific parameters and configurations */
     OMX_IndexImageStartUnused = 0x05000000,
