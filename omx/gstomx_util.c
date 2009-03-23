@@ -144,10 +144,32 @@ imp_new (const gchar *name)
         }
 
         imp->mutex = g_mutex_new ();
+#ifdef BUILD_WITH_ANDROID
+        imp->sym_table.init = dlsym (handle, "PV_MasterOMX_Init");
+        imp->sym_table.deinit = dlsym (handle, "PV_MasterOMX_Deinit");
+        imp->sym_table.get_handle = dlsym (handle, "PV_MasterOMX_GetHandle");
+        imp->sym_table.free_handle = dlsym (handle, "PV_MasterOMX_FreeHandle");
+#else
         imp->sym_table.init = dlsym (handle, "OMX_Init");
         imp->sym_table.deinit = dlsym (handle, "OMX_Deinit");
         imp->sym_table.get_handle = dlsym (handle, "OMX_GetHandle");
         imp->sym_table.free_handle = dlsym (handle, "OMX_FreeHandle");
+#endif
+        GST_LOG("init=%p, deinit=%p, get_handle=%p, free_handle=%p",
+             imp->sym_table.init,
+             imp->sym_table.deinit,
+             imp->sym_table.get_handle,
+             imp->sym_table.free_handle);
+
+        if(!imp->sym_table.init ||
+            !imp->sym_table.deinit ||
+            !imp->sym_table.get_handle ||
+            !imp->sym_table.free_handle)
+        {
+            GST_ERROR("dlsym() failed: %s", dlerror());
+            imp_free (imp);
+            return NULL;
+        }
     }
 
     return imp;
@@ -206,7 +228,10 @@ release_imp (GOmxImp *imp)
     imp->client_count--;
     if (imp->client_count == 0)
     {
-        imp->sym_table.deinit ();
+        if (imp->sym_table.deinit != NULL)
+        {
+            imp->sym_table.deinit ();
+        }
     }
     g_mutex_unlock (imp->mutex);
 }
