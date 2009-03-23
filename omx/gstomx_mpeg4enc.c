@@ -22,7 +22,7 @@
 #include "gstomx_mpeg4enc.h"
 #include "gstomx.h"
 
-#include <stdlib.h> /* For calloc, free */
+#include <stdlib.h>             /* For calloc, free */
 
 #define OMX_COMPONENT_NAME "OMX.st.video_encoder.mpeg4"
 
@@ -31,140 +31,137 @@ static GstOmxBaseFilterClass *parent_class = NULL;
 static GstCaps *
 generate_src_template (void)
 {
-    GstCaps *caps;
+  GstCaps *caps;
 
-    caps = gst_caps_new_simple ("video/mpeg",
-                                "width", GST_TYPE_INT_RANGE, 16, 4096,
-                                "height", GST_TYPE_INT_RANGE, 16, 4096,
-                                "framerate", GST_TYPE_FRACTION_RANGE, 0, 1, 30, 1,
-                                "mpegversion", G_TYPE_INT, 4,
-                                "systemstream", G_TYPE_BOOLEAN, FALSE,
-                                NULL);
+  caps = gst_caps_new_simple ("video/mpeg",
+      "width", GST_TYPE_INT_RANGE, 16, 4096,
+      "height", GST_TYPE_INT_RANGE, 16, 4096,
+      "framerate", GST_TYPE_FRACTION_RANGE, 0, 1, 30, 1,
+      "mpegversion", G_TYPE_INT, 4,
+      "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
 
-    return caps;
+  return caps;
 }
 
 static void
 type_base_init (gpointer g_class)
 {
-    GstElementClass *element_class;
-    GstOmxBaseFilterClass *omx_base_class;
+  GstElementClass *element_class;
+  GstOmxBaseFilterClass *omx_base_class;
 
-    omx_base_class = GST_OMX_BASE_FILTER_CLASS (g_class);
-    element_class = GST_ELEMENT_CLASS (g_class);
+  omx_base_class = GST_OMX_BASE_FILTER_CLASS (g_class);
+  element_class = GST_ELEMENT_CLASS (g_class);
 
-    {
-        GstElementDetails details;
+  {
+    GstElementDetails details;
 
-        details.longname = "OpenMAX IL MPEG-4 video encoder";
-        details.klass = "Codec/Encoder/Video";
-        details.description = "Encodes video in MPEG-4 format with OpenMAX IL";
-        details.author = "Felipe Contreras";
+    details.longname = "OpenMAX IL MPEG-4 video encoder";
+    details.klass = "Codec/Encoder/Video";
+    details.description = "Encodes video in MPEG-4 format with OpenMAX IL";
+    details.author = "Felipe Contreras";
 
-        gst_element_class_set_details (element_class, &details);
-    }
+    gst_element_class_set_details (element_class, &details);
+  }
 
-    {
-        GstPadTemplate *template;
+  {
+    GstPadTemplate *template;
 
-        template = gst_pad_template_new ("src", GST_PAD_SRC,
-                                         GST_PAD_ALWAYS,
-                                         generate_src_template ());
+    template = gst_pad_template_new ("src", GST_PAD_SRC,
+        GST_PAD_ALWAYS, generate_src_template ());
 
-        gst_element_class_add_pad_template (element_class, template);
-    }
+    gst_element_class_add_pad_template (element_class, template);
+  }
 }
 
 static void
-type_class_init (gpointer g_class,
-                 gpointer class_data)
+type_class_init (gpointer g_class, gpointer class_data)
 {
-    parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
+  parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
 }
 
 static void
-settings_changed_cb (GOmxCore *core)
+settings_changed_cb (GOmxCore * core)
 {
-    GstOmxBaseFilter *omx_base;
-    guint width;
-    guint height;
-    guint framerate;
+  GstOmxBaseFilter *omx_base;
+  guint width;
+  guint height;
+  guint framerate;
 
-    omx_base = core->client_data;
+  omx_base = core->client_data;
 
-    GST_DEBUG_OBJECT (omx_base, "settings changed");
+  GST_DEBUG_OBJECT (omx_base, "settings changed");
 
-    {
-        OMX_PARAM_PORTDEFINITIONTYPE *param;
+  {
+    OMX_PARAM_PORTDEFINITIONTYPE *param;
 
-        param = calloc (1, sizeof (OMX_PARAM_PORTDEFINITIONTYPE));
+    param = calloc (1, sizeof (OMX_PARAM_PORTDEFINITIONTYPE));
 
-        param->nSize = sizeof (OMX_PARAM_PORTDEFINITIONTYPE);
-        param->nVersion.s.nVersionMajor = 1;
-        param->nVersion.s.nVersionMinor = 1;
+    param->nSize = sizeof (OMX_PARAM_PORTDEFINITIONTYPE);
+    param->nVersion.s.nVersionMajor = 1;
+    param->nVersion.s.nVersionMinor = 1;
 
-        param->nPortIndex = 1;
-        OMX_GetParameter (omx_base->gomx->omx_handle, OMX_IndexParamPortDefinition, param);
+    param->nPortIndex = 1;
+    OMX_GetParameter (omx_base->gomx->omx_handle, OMX_IndexParamPortDefinition,
+        param);
 
-        width = param->format.video.nFrameWidth;
-        height = param->format.video.nFrameHeight;
-        framerate = param->format.video.xFramerate;
+    width = param->format.video.nFrameWidth;
+    height = param->format.video.nFrameHeight;
+    framerate = param->format.video.xFramerate;
 
-        free (param);
-    }
+    free (param);
+  }
 
-    {
-        GstCaps *new_caps;
+  {
+    GstCaps *new_caps;
 
-        new_caps = gst_caps_new_simple ("video/mpeg",
-                                        "mpegversion", G_TYPE_INT, 4,
-                                        "width", G_TYPE_INT, width,
-                                        "height", G_TYPE_INT, height,
-                                        "framerate", GST_TYPE_FRACTION, framerate, 1,
-                                        "systemstream", G_TYPE_BOOLEAN, FALSE,
-                                        NULL);
+    new_caps = gst_caps_new_simple ("video/mpeg",
+        "mpegversion", G_TYPE_INT, 4,
+        "width", G_TYPE_INT, width,
+        "height", G_TYPE_INT, height,
+        "framerate", GST_TYPE_FRACTION, framerate, 1,
+        "systemstream", G_TYPE_BOOLEAN, FALSE, NULL);
 
-        GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
-        gst_pad_set_caps (omx_base->srcpad, new_caps);
-    }
+    GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
+    gst_pad_set_caps (omx_base->srcpad, new_caps);
+  }
 }
 
 static void
-type_instance_init (GTypeInstance *instance,
-                    gpointer g_class)
+type_instance_init (GTypeInstance * instance, gpointer g_class)
 {
-    GstOmxBaseFilter *omx_base_filter;
-    GstOmxBaseVideoEnc *omx_base;
+  GstOmxBaseFilter *omx_base_filter;
+  GstOmxBaseVideoEnc *omx_base;
 
-    omx_base_filter = GST_OMX_BASE_FILTER (instance);
-    omx_base = GST_OMX_BASE_VIDEOENC (instance);
+  omx_base_filter = GST_OMX_BASE_FILTER (instance);
+  omx_base = GST_OMX_BASE_VIDEOENC (instance);
 
-    omx_base_filter->omx_component = g_strdup (OMX_COMPONENT_NAME);
-    omx_base->compression_format = OMX_VIDEO_CodingMPEG4;
+  omx_base_filter->omx_component = g_strdup (OMX_COMPONENT_NAME);
+  omx_base->compression_format = OMX_VIDEO_CodingMPEG4;
 
-    omx_base_filter->gomx->settings_changed_cb = settings_changed_cb;
+  omx_base_filter->gomx->settings_changed_cb = settings_changed_cb;
 }
 
 GType
 gst_omx_mpeg4enc_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (G_UNLIKELY (type == 0))
-    {
-        GTypeInfo *type_info;
+  if (G_UNLIKELY (type == 0)) {
+    GTypeInfo *type_info;
 
-        type_info = g_new0 (GTypeInfo, 1);
-        type_info->class_size = sizeof (GstOmxMpeg4EncClass);
-        type_info->base_init = type_base_init;
-        type_info->class_init = type_class_init;
-        type_info->instance_size = sizeof (GstOmxMpeg4Enc);
-        type_info->instance_init = type_instance_init;
+    type_info = g_new0 (GTypeInfo, 1);
+    type_info->class_size = sizeof (GstOmxMpeg4EncClass);
+    type_info->base_init = type_base_init;
+    type_info->class_init = type_class_init;
+    type_info->instance_size = sizeof (GstOmxMpeg4Enc);
+    type_info->instance_init = type_instance_init;
 
-        type = g_type_register_static (GST_OMX_BASE_VIDEOENC_TYPE, "GstOmxMpeg4Enc", type_info, 0);
+    type =
+        g_type_register_static (GST_OMX_BASE_VIDEOENC_TYPE, "GstOmxMpeg4Enc",
+        type_info, 0);
 
-        g_free (type_info);
-    }
+    g_free (type_info);
+  }
 
-    return type;
+  return type;
 }

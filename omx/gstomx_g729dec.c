@@ -30,149 +30,140 @@ static GstOmxBaseFilterClass *parent_class = NULL;
 static GstCaps *
 generate_src_template (void)
 {
-    GstCaps *caps;
+  GstCaps *caps;
 
-    caps = gst_caps_new_simple ("audio/x-raw-int",
-                                "endianness", G_TYPE_INT, G_BYTE_ORDER,
-                                "width", G_TYPE_INT, 16,
-                                "depth", G_TYPE_INT, 16,
-                                "rate", G_TYPE_INT, 8000,
-                                "signed", G_TYPE_BOOLEAN, TRUE,
-                                "channels", G_TYPE_INT, 1,
-                                NULL);
+  caps = gst_caps_new_simple ("audio/x-raw-int",
+      "endianness", G_TYPE_INT, G_BYTE_ORDER,
+      "width", G_TYPE_INT, 16,
+      "depth", G_TYPE_INT, 16,
+      "rate", G_TYPE_INT, 8000,
+      "signed", G_TYPE_BOOLEAN, TRUE, "channels", G_TYPE_INT, 1, NULL);
 
-    return caps;
+  return caps;
 }
 
 static GstCaps *
 generate_sink_template (void)
 {
-    GstCaps *caps;
-    GstStructure *struc;
+  GstCaps *caps;
+  GstStructure *struc;
 
-    caps = gst_caps_new_empty ();
+  caps = gst_caps_new_empty ();
 
-    struc = gst_structure_new ("audio/G729",
-                               "rate", G_TYPE_INT, 8000,
-                               "channels", G_TYPE_INT, 1,
-                               NULL);
+  struc = gst_structure_new ("audio/G729",
+      "rate", G_TYPE_INT, 8000, "channels", G_TYPE_INT, 1, NULL);
 
-    gst_caps_append_structure (caps, struc);
+  gst_caps_append_structure (caps, struc);
 
-    return caps;
+  return caps;
 }
 
 static void
 type_base_init (gpointer g_class)
 {
-    GstElementClass *element_class;
+  GstElementClass *element_class;
 
-    element_class = GST_ELEMENT_CLASS (g_class);
+  element_class = GST_ELEMENT_CLASS (g_class);
 
-    {
-        GstElementDetails details;
+  {
+    GstElementDetails details;
 
-        details.longname = "OpenMAX IL G.729 audio decoder";
-        details.klass = "Codec/Decoder/Audio";
-        details.description = "Decodes audio in G.729 format with OpenMAX IL";
-        details.author = "Felipe Contreras";
+    details.longname = "OpenMAX IL G.729 audio decoder";
+    details.klass = "Codec/Decoder/Audio";
+    details.description = "Decodes audio in G.729 format with OpenMAX IL";
+    details.author = "Felipe Contreras";
 
-        gst_element_class_set_details (element_class, &details);
-    }
+    gst_element_class_set_details (element_class, &details);
+  }
 
-    {
-        GstPadTemplate *template;
+  {
+    GstPadTemplate *template;
 
-        template = gst_pad_template_new ("src", GST_PAD_SRC,
-                                         GST_PAD_ALWAYS,
-                                         generate_src_template ());
+    template = gst_pad_template_new ("src", GST_PAD_SRC,
+        GST_PAD_ALWAYS, generate_src_template ());
 
-        gst_element_class_add_pad_template (element_class, template);
-    }
+    gst_element_class_add_pad_template (element_class, template);
+  }
 
-    {
-        GstPadTemplate *template;
+  {
+    GstPadTemplate *template;
 
-        template = gst_pad_template_new ("sink", GST_PAD_SINK,
-                                         GST_PAD_ALWAYS,
-                                         generate_sink_template ());
+    template = gst_pad_template_new ("sink", GST_PAD_SINK,
+        GST_PAD_ALWAYS, generate_sink_template ());
 
-        gst_element_class_add_pad_template (element_class, template);
-    }
+    gst_element_class_add_pad_template (element_class, template);
+  }
 }
 
 static void
-type_class_init (gpointer g_class,
-                 gpointer class_data)
+type_class_init (gpointer g_class, gpointer class_data)
 {
-    GObjectClass *gobject_class;
+  GObjectClass *gobject_class;
 
-    gobject_class = G_OBJECT_CLASS (g_class);
+  gobject_class = G_OBJECT_CLASS (g_class);
 
-    parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
+  parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
 }
 
 static void
-settings_changed_cb (GOmxCore *core)
+settings_changed_cb (GOmxCore * core)
 {
-    GstOmxBaseFilter *omx_base;
+  GstOmxBaseFilter *omx_base;
 
-    omx_base = core->client_data;
+  omx_base = core->client_data;
 
-    GST_DEBUG_OBJECT (omx_base, "settings changed");
+  GST_DEBUG_OBJECT (omx_base, "settings changed");
 
-    {
-        GstCaps *new_caps;
+  {
+    GstCaps *new_caps;
 
-        new_caps = gst_caps_new_simple ("audio/x-raw-int",
-                                        "endianness", G_TYPE_INT, G_BYTE_ORDER,
-                                        "width", G_TYPE_INT, 16,
-                                        "depth", G_TYPE_INT, 16,
-                                        "rate", G_TYPE_INT, 8000,
-                                        "signed", G_TYPE_BOOLEAN, TRUE,
-                                        "channels", G_TYPE_INT, 1,
-                                        NULL);
+    new_caps = gst_caps_new_simple ("audio/x-raw-int",
+        "endianness", G_TYPE_INT, G_BYTE_ORDER,
+        "width", G_TYPE_INT, 16,
+        "depth", G_TYPE_INT, 16,
+        "rate", G_TYPE_INT, 8000,
+        "signed", G_TYPE_BOOLEAN, TRUE, "channels", G_TYPE_INT, 1, NULL);
 
-        GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
-        gst_pad_set_caps (omx_base->srcpad, new_caps);
-    }
+    GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
+    gst_pad_set_caps (omx_base->srcpad, new_caps);
+  }
 }
 
 static void
-type_instance_init (GTypeInstance *instance,
-                    gpointer g_class)
+type_instance_init (GTypeInstance * instance, gpointer g_class)
 {
-    GstOmxBaseFilter *omx_base;
-    GstOmxG729Dec *self;
+  GstOmxBaseFilter *omx_base;
+  GstOmxG729Dec *self;
 
-    omx_base = GST_OMX_BASE_FILTER (instance);
-    self = GST_OMX_G729DEC (instance);
+  omx_base = GST_OMX_BASE_FILTER (instance);
+  self = GST_OMX_G729DEC (instance);
 
-    omx_base->omx_component = g_strdup (OMX_COMPONENT_NAME);
+  omx_base->omx_component = g_strdup (OMX_COMPONENT_NAME);
 
-    omx_base->gomx->settings_changed_cb = settings_changed_cb;
+  omx_base->gomx->settings_changed_cb = settings_changed_cb;
 }
 
 GType
 gst_omx_g729dec_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (G_UNLIKELY (type == 0))
-    {
-        GTypeInfo *type_info;
+  if (G_UNLIKELY (type == 0)) {
+    GTypeInfo *type_info;
 
-        type_info = g_new0 (GTypeInfo, 1);
-        type_info->class_size = sizeof (GstOmxG729DecClass);
-        type_info->base_init = type_base_init;
-        type_info->class_init = type_class_init;
-        type_info->instance_size = sizeof (GstOmxG729Dec);
-        type_info->instance_init = type_instance_init;
+    type_info = g_new0 (GTypeInfo, 1);
+    type_info->class_size = sizeof (GstOmxG729DecClass);
+    type_info->base_init = type_base_init;
+    type_info->class_init = type_class_init;
+    type_info->instance_size = sizeof (GstOmxG729Dec);
+    type_info->instance_init = type_instance_init;
 
-        type = g_type_register_static (GST_OMX_BASE_FILTER_TYPE, "GstOmxG729Dec", type_info, 0);
+    type =
+        g_type_register_static (GST_OMX_BASE_FILTER_TYPE, "GstOmxG729Dec",
+        type_info, 0);
 
-        g_free (type_info);
-    }
+    g_free (type_info);
+  }
 
-    return type;
+  return type;
 }

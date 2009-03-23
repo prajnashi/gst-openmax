@@ -23,7 +23,7 @@
 #include "gstomx_base_filter.h"
 #include "gstomx.h"
 
-#include <stdlib.h> /* For calloc, free */
+#include <stdlib.h>             /* For calloc, free */
 
 #ifdef BUILD_WITH_ANDROID
 #define OMX_COMPONENT_NAME "OMX.PV.amrdec"
@@ -33,233 +33,225 @@
 
 static GstOmxBaseFilterClass *parent_class = NULL;
 
-static GstStateChangeReturn gst_wb_change_state (GstElement *element, GstStateChange transition);
+static GstStateChangeReturn gst_wb_change_state (GstElement * element,
+    GstStateChange transition);
 
 static GstCaps *
 generate_src_template (void)
 {
-    GstCaps *caps;
+  GstCaps *caps;
 
-    caps = gst_caps_new_simple ("audio/x-raw-int",
-                                "endianness", G_TYPE_INT, G_BYTE_ORDER,
-                                "width", G_TYPE_INT, 16,
-                                "depth", G_TYPE_INT, 16,
-                                "rate", G_TYPE_INT, 16000,
-                                "signed", G_TYPE_BOOLEAN, TRUE,
-                                "channels", G_TYPE_INT, 1,
-                                NULL);
+  caps = gst_caps_new_simple ("audio/x-raw-int",
+      "endianness", G_TYPE_INT, G_BYTE_ORDER,
+      "width", G_TYPE_INT, 16,
+      "depth", G_TYPE_INT, 16,
+      "rate", G_TYPE_INT, 16000,
+      "signed", G_TYPE_BOOLEAN, TRUE, "channels", G_TYPE_INT, 1, NULL);
 
-    return caps;
+  return caps;
 }
 
 static GstCaps *
 generate_sink_template (void)
 {
-    GstCaps *caps;
+  GstCaps *caps;
 
-    caps = gst_caps_new_simple ("audio/AMR-WB",
-                                "rate", G_TYPE_INT, 16000,
-                                "channels", G_TYPE_INT, 1,
-                                NULL);
+  caps = gst_caps_new_simple ("audio/AMR-WB",
+      "rate", G_TYPE_INT, 16000, "channels", G_TYPE_INT, 1, NULL);
 
-    return caps;
+  return caps;
 }
 
 static void
 type_base_init (gpointer g_class)
 {
-    GstElementClass *element_class;
+  GstElementClass *element_class;
 
-    element_class = GST_ELEMENT_CLASS (g_class);
+  element_class = GST_ELEMENT_CLASS (g_class);
 
-    {
-        GstElementDetails details;
+  {
+    GstElementDetails details;
 
-        details.longname = "OpenMAX IL AMR-WB audio decoder";
-        details.klass = "Codec/Decoder/Audio";
-        details.description = "Decodes audio in AMR-WB format with OpenMAX IL";
-        details.author = "Felipe Contreras";
+    details.longname = "OpenMAX IL AMR-WB audio decoder";
+    details.klass = "Codec/Decoder/Audio";
+    details.description = "Decodes audio in AMR-WB format with OpenMAX IL";
+    details.author = "Felipe Contreras";
 
-        gst_element_class_set_details (element_class, &details);
-    }
+    gst_element_class_set_details (element_class, &details);
+  }
 
-    {
-        GstPadTemplate *template;
+  {
+    GstPadTemplate *template;
 
-        template = gst_pad_template_new ("src", GST_PAD_SRC,
-                                         GST_PAD_ALWAYS,
-                                         generate_src_template ());
+    template = gst_pad_template_new ("src", GST_PAD_SRC,
+        GST_PAD_ALWAYS, generate_src_template ());
 
-        gst_element_class_add_pad_template (element_class, template);
-    }
+    gst_element_class_add_pad_template (element_class, template);
+  }
 
-    {
-        GstPadTemplate *template;
+  {
+    GstPadTemplate *template;
 
-        template = gst_pad_template_new ("sink", GST_PAD_SINK,
-                                         GST_PAD_ALWAYS,
-                                         generate_sink_template ());
+    template = gst_pad_template_new ("sink", GST_PAD_SINK,
+        GST_PAD_ALWAYS, generate_sink_template ());
 
-        gst_element_class_add_pad_template (element_class, template);
-    }
+    gst_element_class_add_pad_template (element_class, template);
+  }
 }
 
 static void
-type_class_init (gpointer g_class,
-                 gpointer class_data)
-{  
-    GstElementClass *element_class;
-    element_class = GST_ELEMENT_CLASS (g_class);
-    
-    parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
-    element_class->change_state = GST_DEBUG_FUNCPTR(gst_wb_change_state);
+type_class_init (gpointer g_class, gpointer class_data)
+{
+  GstElementClass *element_class;
+  element_class = GST_ELEMENT_CLASS (g_class);
+
+  parent_class = g_type_class_ref (GST_OMX_BASE_FILTER_TYPE);
+  element_class->change_state = GST_DEBUG_FUNCPTR (gst_wb_change_state);
 }
 
 static void
-settings_changed_cb (GOmxCore *core)
+settings_changed_cb (GOmxCore * core)
 {
-    GstOmxBaseFilter *omx_base;
-    guint rate;
-    guint channels;
+  GstOmxBaseFilter *omx_base;
+  guint rate;
+  guint channels;
 
-    omx_base = core->client_data;
+  omx_base = core->client_data;
 
-    GST_DEBUG_OBJECT (omx_base, "settings changed");
+  GST_DEBUG_OBJECT (omx_base, "settings changed");
 
-    {
-        OMX_AUDIO_PARAM_PCMMODETYPE *param;
-
-        param = calloc (1, sizeof (OMX_AUDIO_PARAM_PCMMODETYPE));
-        param->nSize = sizeof (OMX_AUDIO_PARAM_PCMMODETYPE);
-        param->nVersion.s.nVersionMajor = 1;
-        param->nVersion.s.nVersionMinor = 1;
-
-        param->nPortIndex = 1;
-        OMX_GetParameter (omx_base->gomx->omx_handle, OMX_IndexParamAudioPcm, param);
-
-        rate = param->nSamplingRate;
-        channels = param->nChannels;
-
-        free (param);
-    }
-
-    {
-        GstCaps *new_caps;
-
-        new_caps = gst_caps_new_simple ("audio/x-raw-int",
-                                        "width", G_TYPE_INT, 16,
-                                        "depth", G_TYPE_INT, 16,
-                                        "rate", G_TYPE_INT, rate,
-                                        "signed", G_TYPE_BOOLEAN, TRUE,
-                                        "endianness", G_TYPE_INT, G_BYTE_ORDER,
-                                        "channels", G_TYPE_INT, channels,
-                                        NULL);
-
-        GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
-        gst_pad_set_caps (omx_base->srcpad, new_caps);
-    }
-}
-
-static void
-type_instance_init (GTypeInstance *instance,
-                    gpointer g_class)
-{
-    GstOmxBaseFilter *omx_base;
-
-    omx_base = GST_OMX_BASE_FILTER (instance);
-
-    omx_base->omx_component = g_strdup (OMX_COMPONENT_NAME);
-
-    omx_base->gomx->settings_changed_cb = settings_changed_cb;
-}
-
-static GstStateChangeReturn
-gst_wb_change_state (GstElement *element,
-                GstStateChange transition)
-{
-    GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
-
+  {
     OMX_AUDIO_PARAM_PCMMODETYPE *param;
-    GstOmxAmrWbDec *self;
-    GstOmxBaseFilter *omx_base;
-    OMX_HANDLETYPE wb_handle;
- 
-    self = GST_OMX_AMRWBDEC(element);
-    omx_base = GST_OMX_BASE_FILTER (element);
-    wb_handle = omx_base->gomx->omx_handle;
 
     param = calloc (1, sizeof (OMX_AUDIO_PARAM_PCMMODETYPE));
     param->nSize = sizeof (OMX_AUDIO_PARAM_PCMMODETYPE);
     param->nVersion.s.nVersionMajor = 1;
     param->nVersion.s.nVersionMinor = 1;
+
     param->nPortIndex = 1;
+    OMX_GetParameter (omx_base->gomx->omx_handle, OMX_IndexParamAudioPcm,
+        param);
 
-    switch (transition)
-    {
-        case GST_STATE_CHANGE_NULL_TO_READY:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_NULL_TO_READY\n");
-            break;
-        case GST_STATE_CHANGE_READY_TO_PAUSED:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_READY_TO_PAUSED\n");
-#ifdef BUILD_WITH_ANDROID            
-            /* 
-             * set OMX_IndexConfigAudioAmrWB and OMX_IndexConfigAudioAmrFrameFormatFSF
-             * to work with PV OpenMax
-             */
-            OMX_SetParameter(wb_handle, OMX_IndexConfigAudioAmrWB, param);
-            OMX_SetParameter(wb_handle, OMX_IndexConfigAudioAmrFrameFormatFSF, param);
-#endif /* BUILD_WITH_ANDROID */             
-            break;
-        case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PAUSED_TO_PLAYING\n");
-            break;
-        default:
-            break;
-    }
-
-    ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
-
-    if (ret == GST_STATE_CHANGE_FAILURE)
-        return ret;
-    switch (transition)
-    {
-        case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PLAYING_TO_PAUSED\n");
-            break;
-        case GST_STATE_CHANGE_PAUSED_TO_READY:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_PAUSED_TO_READY\n");
-            break;
-        case GST_STATE_CHANGE_READY_TO_NULL:
-            GST_DEBUG_OBJECT(self,"GST_STATE_CHANGE_READY_TO_NULL\n");
-            break;
-        default:
-            break;
-    }
+    rate = param->nSamplingRate;
+    channels = param->nChannels;
 
     free (param);
+  }
+
+  {
+    GstCaps *new_caps;
+
+    new_caps = gst_caps_new_simple ("audio/x-raw-int",
+        "width", G_TYPE_INT, 16,
+        "depth", G_TYPE_INT, 16,
+        "rate", G_TYPE_INT, rate,
+        "signed", G_TYPE_BOOLEAN, TRUE,
+        "endianness", G_TYPE_INT, G_BYTE_ORDER,
+        "channels", G_TYPE_INT, channels, NULL);
+
+    GST_INFO_OBJECT (omx_base, "caps are: %" GST_PTR_FORMAT, new_caps);
+    gst_pad_set_caps (omx_base->srcpad, new_caps);
+  }
+}
+
+static void
+type_instance_init (GTypeInstance * instance, gpointer g_class)
+{
+  GstOmxBaseFilter *omx_base;
+
+  omx_base = GST_OMX_BASE_FILTER (instance);
+
+  omx_base->omx_component = g_strdup (OMX_COMPONENT_NAME);
+
+  omx_base->gomx->settings_changed_cb = settings_changed_cb;
+}
+
+static GstStateChangeReturn
+gst_wb_change_state (GstElement * element, GstStateChange transition)
+{
+  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+
+  OMX_AUDIO_PARAM_PCMMODETYPE *param;
+  GstOmxAmrWbDec *self;
+  GstOmxBaseFilter *omx_base;
+  OMX_HANDLETYPE wb_handle;
+
+  self = GST_OMX_AMRWBDEC (element);
+  omx_base = GST_OMX_BASE_FILTER (element);
+  wb_handle = omx_base->gomx->omx_handle;
+
+  param = calloc (1, sizeof (OMX_AUDIO_PARAM_PCMMODETYPE));
+  param->nSize = sizeof (OMX_AUDIO_PARAM_PCMMODETYPE);
+  param->nVersion.s.nVersionMajor = 1;
+  param->nVersion.s.nVersionMinor = 1;
+  param->nPortIndex = 1;
+
+  switch (transition) {
+    case GST_STATE_CHANGE_NULL_TO_READY:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_NULL_TO_READY\n");
+      break;
+    case GST_STATE_CHANGE_READY_TO_PAUSED:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_READY_TO_PAUSED\n");
+#ifdef BUILD_WITH_ANDROID
+      /* 
+       * set OMX_IndexConfigAudioAmrWB and OMX_IndexConfigAudioAmrFrameFormatFSF
+       * to work with PV OpenMax
+       */
+      OMX_SetParameter (wb_handle, OMX_IndexConfigAudioAmrWB, param);
+      OMX_SetParameter (wb_handle, OMX_IndexConfigAudioAmrFrameFormatFSF,
+          param);
+#endif /* BUILD_WITH_ANDROID */
+      break;
+    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_PAUSED_TO_PLAYING\n");
+      break;
+    default:
+      break;
+  }
+
+  ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+
+  if (ret == GST_STATE_CHANGE_FAILURE)
     return ret;
+  switch (transition) {
+    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_PLAYING_TO_PAUSED\n");
+      break;
+    case GST_STATE_CHANGE_PAUSED_TO_READY:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_PAUSED_TO_READY\n");
+      break;
+    case GST_STATE_CHANGE_READY_TO_NULL:
+      GST_DEBUG_OBJECT (self, "GST_STATE_CHANGE_READY_TO_NULL\n");
+      break;
+    default:
+      break;
+  }
+
+  free (param);
+  return ret;
 }
 
 GType
 gst_omx_amrwbdec_get_type (void)
 {
-    static GType type = 0;
+  static GType type = 0;
 
-    if (G_UNLIKELY (type == 0))
-    {
-        GTypeInfo *type_info;
+  if (G_UNLIKELY (type == 0)) {
+    GTypeInfo *type_info;
 
-        type_info = g_new0 (GTypeInfo, 1);
-        type_info->class_size = sizeof (GstOmxAmrWbDecClass);
-        type_info->base_init = type_base_init;
-        type_info->class_init = type_class_init;
-        type_info->instance_size = sizeof (GstOmxAmrWbDec);
-        type_info->instance_init = type_instance_init;
+    type_info = g_new0 (GTypeInfo, 1);
+    type_info->class_size = sizeof (GstOmxAmrWbDecClass);
+    type_info->base_init = type_base_init;
+    type_info->class_init = type_class_init;
+    type_info->instance_size = sizeof (GstOmxAmrWbDec);
+    type_info->instance_init = type_instance_init;
 
-        type = g_type_register_static (GST_OMX_BASE_FILTER_TYPE, "GstOmxAmrWbDec", type_info, 0);
+    type =
+        g_type_register_static (GST_OMX_BASE_FILTER_TYPE, "GstOmxAmrWbDec",
+        type_info, 0);
 
-        g_free (type_info);
-    }
+    g_free (type_info);
+  }
 
-    return type;
+  return type;
 }
