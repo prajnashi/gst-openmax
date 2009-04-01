@@ -156,4 +156,7 @@ void g_omx_sem_free (GOmxSem *sem);
 void g_omx_sem_down (GOmxSem *sem);
 void g_omx_sem_up (GOmxSem *sem);
 
+const gchar * g_omx_state_name (OMX_STATETYPE state);
+const gchar * g_omx_error_name (OMX_ERRORTYPE error);
+
 #endif /* GSTOMX_UTIL_H */

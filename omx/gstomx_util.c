@@ -184,6 +184,7 @@ request_imp (const gchar * name)
     OMX_ERRORTYPE omx_error;
     omx_error = imp->sym_table.init ();
     if (omx_error) {
+      GST_ERROR ("%s", g_omx_error_name(omx_error));
       g_mutex_unlock (imp->mutex);
       return NULL;
     }
@@ -290,7 +291,7 @@ g_omx_core_init (GOmxCore * core,
       core->imp->sym_table.get_handle (&core->omx_handle,
       (gchar *) component_name, core, &callbacks);
   core->omx_state = OMX_StateLoaded;
-  GST_LOG ("Leave, omx_error=%d, omx_handle=%p", core->omx_error,
+  GST_LOG ("Leave, omx_error=%s, omx_handle=%p", g_omx_error_name(core->omx_error),
       core->omx_handle);
 }
 
@@ -302,8 +303,10 @@ g_omx_core_deinit (GOmxCore * core)
 
   core->omx_error = core->imp->sym_table.free_handle (core->omx_handle);
 
-  if (core->omx_error)
+  if (core->omx_error) {
+    GST_ERROR ("%s", g_omx_error_name(core->omx_error));
     return;
+  }
 
   release_imp (core->imp);
   core->imp = NULL;
@@ -736,7 +739,7 @@ g_omx_sem_up (GOmxSem * sem)
 static inline void
 change_state (GOmxCore * core, OMX_STATETYPE state)
 {
-  GST_LOG ("state=%d", state);
+  GST_LOG ("state=%s", g_omx_state_name(state));
   OMX_SendCommand (core->omx_handle, OMX_CommandStateSet, state, NULL);
 }
 
@@ -745,9 +748,10 @@ complete_change_state (GOmxCore * core, OMX_STATETYPE state)
 {
   g_mutex_lock (core->omx_state_mutex);
 
+  GST_LOG ("state=%s", g_omx_state_name(state));
   core->omx_state = state;
   g_cond_signal (core->omx_state_condition);
-  GST_LOG ("state=%d", state);
+  GST_LOG ("done");
 
   g_mutex_unlock (core->omx_state_mutex);
 }
@@ -880,8 +884,10 @@ EventHandler (OMX_HANDLETYPE omx_handle,
       }
 #endif /* BUILD_WITH_ANDROID */
     }
+    break;
     case OMX_EventError:
     {
+      GST_WARNING ("OMX_EventError %s", g_omx_error_name(data_1));
       switch (data_1) {
         case OMX_ErrorInvalidState:
         case OMX_ErrorInsufficientResources:
@@ -891,6 +897,9 @@ EventHandler (OMX_HANDLETYPE omx_handle,
           core->omx_error = data_1;
           GST_ERROR ("unrecoverable error");
           break;
+      case OMX_ErrorStreamCorrupt:
+	GST_ERROR ("Stream is corrupted !");
+	break;
         default:
           /* might be common, let's not cause panic by _ERROR */
           GST_WARNING ("unhandled error: %lx", data_1);
@@ -913,15 +922,11 @@ EmptyBufferDone (OMX_HANDLETYPE omx_handle,
   GOmxCore *core;
   GOmxPort *port;
 
-  GST_LOG ("Enter");
-
   core = (GOmxCore *) app_data;
   port = g_omx_core_get_port (core, omx_buffer->nInputPortIndex);
 
   GST_LOG ("omx_buffer=%p", omx_buffer);
   got_buffer (core, port, omx_buffer);
-
-  GST_LOG ("Leave");
 
   return OMX_ErrorNone;
 }
@@ -932,7 +937,6 @@ FillBufferDone (OMX_HANDLETYPE omx_handle,
 {
   GOmxCore *core;
   GOmxPort *port;
-  GST_LOG ("Enter");
 
   core = (GOmxCore *) app_data;
   port = g_omx_core_get_port (core, omx_buffer->nOutputPortIndex);
@@ -940,7 +944,89 @@ FillBufferDone (OMX_HANDLETYPE omx_handle,
   GST_LOG ("omx_buffer=%p", omx_buffer);
   got_buffer (core, port, omx_buffer);
 
-  GST_LOG ("Leave");
-
   return OMX_ErrorNone;
+}
+
+typedef struct {
+  const OMX_STATETYPE state;
+  const gchar * name;
+} OmxStateName;
+
+static OmxStateName state_names[] = {
+  { OMX_StateInvalid, "Invalid" },
+  { OMX_StateLoaded, "Loaded" },
+  { OMX_StateIdle, "Idle" },
+  { OMX_StateExecuting, "Executing" },
+  { OMX_StatePause, "Pause" },
+  { OMX_StateWaitForResources, "WaitForResources" },
+  { 0, NULL, 0}
+};
+
+const gchar *
+g_omx_state_name (OMX_STATETYPE state)
+{
+  gint i;
+
+  for (i = 0; state_names[i].name; i++)
+    if (state == state_names[i].state)
+      return state_names[i].name;
+  return "UNKNOWN";
+}
+
+typedef struct {
+  const OMX_STATETYPE error;
+  const gchar * name;
+} OmxErrorName;
+
+static OmxErrorName error_names[] = {
+  { OMX_ErrorNone, "None" },
+  { OMX_ErrorInsufficientResources, "Insufficient Resources" },
+  { OMX_ErrorUndefined, "Undefined" },
+  { OMX_ErrorInvalidComponentName, "Invalid Component Name" },
+  { OMX_ErrorComponentNotFound, "Component Not Found" },
+  { OMX_ErrorInvalidComponent, "Invalid Component" },
+  { OMX_ErrorBadParameter, "Bad Parameter" },
+  { OMX_ErrorNotImplemented, "Not Implemented" },
+  { OMX_ErrorUnderflow, "Underflow" },
+  { OMX_ErrorOverflow, "Overflow" },
+  { OMX_ErrorHardware, "Hardware Error" },
+  { OMX_ErrorInvalidState, "Invalid State" },
+  { OMX_ErrorStreamCorrupt, "Stream Corrup" },
+  { OMX_ErrorPortsNotCompatible, "Ports Not Compatible" },
+  { OMX_ErrorResourcesLost, "Resources Lost" },
+  { OMX_ErrorNoMore, "No More" },
+  { OMX_ErrorVersionMismatch, "Version Mismatch" },
+  { OMX_ErrorNotReady, "Not Ready" },
+  { OMX_ErrorTimeout, "Timeout" },
+  { OMX_ErrorSameState, "Same State" },
+  { OMX_ErrorResourcesPreempted, "Resources Preempted" },
+  { OMX_ErrorPortUnresponsiveDuringAllocation, "Port Unresponsive During Allocation" },
+  { OMX_ErrorPortUnresponsiveDuringDeallocation, "Port Unresponsive During Deallocation" },
+  { OMX_ErrorPortUnresponsiveDuringStop, "Port Unresponsive During Stop" },
+  { OMX_ErrorIncorrectStateTransition, "Incorrect State Transition" },
+  { OMX_ErrorIncorrectStateOperation, "Incorrect State Operation" },
+  { OMX_ErrorUnsupportedSetting, "Unsupported Setting" },
+  { OMX_ErrorUnsupportedIndex, "Unsupported Index" },
+  { OMX_ErrorBadPortIndex, "Bad Port Index" },
+  { OMX_ErrorPortUnpopulated, "Port Unpopulated" },
+  { OMX_ErrorComponentSuspended, "Component Suspended" },
+  { OMX_ErrorDynamicResourcesUnavailable, "Dynamic Resources Unavailable" },
+  { OMX_ErrorMbErrorsInFrame, "MacroBlock Errors In Frame" },
+  { OMX_ErrorFormatNotDetected, "Format Not Detected" },
+  { OMX_ErrorContentPipeOpenFailed, "Content Pipe Open Failed" },
+  { OMX_ErrorContentPipeCreationFailed, "Content Pipe Creation Failed" },
+  { OMX_ErrorSeperateTablesUsed, "Separate Tables Used" },
+  { OMX_ErrorTunnelingUnsupported, "Tuneling Unsupported" },
+  { 0, NULL, 0}
+};
+
+const gchar *
+g_omx_error_name (OMX_ERRORTYPE error)
+{
+  gint i;
+
+  for (i = 0; error_names[i].name; i++)
+    if (error == error_names[i].error)
+      return error_names[i].name;
+  return "UNKNOWN";
 }
